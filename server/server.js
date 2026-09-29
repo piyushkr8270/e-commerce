@@ -43,61 +43,8 @@ app.get('/health', (req, res) => {
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 
-// Static Hero Assets Serve & Sync
-const fs = require('fs');
 const path = require('path');
-const artifactDir = 'C:\\Users\\HP\\.gemini\\antigravity-ide\\brain\\c862ab86-7d72-407b-ad66-2549d9c321ca';
 const clientPublicDir = path.join(__dirname, '../client/public');
-
-try {
-  if (!fs.existsSync(clientPublicDir)) {
-    fs.mkdirSync(clientPublicDir, { recursive: true });
-  }
-  const assetMap = [
-    { src: 'hero_earbuds_3d_1788986416061.jpg', dest: 'hero-earbuds.jpg' },
-    { src: 'hero_smartwatch_3d_1788986435961.jpg', dest: 'hero-smartwatch.jpg' },
-    { src: 'hero_headset_3d_1788986451205.jpg', dest: 'hero-headset.jpg' },
-    { src: 'neon_backpack_card_1788988622375.jpg', dest: 'backpack-neon.jpg' }
-  ];
-  assetMap.forEach(({ src, dest }) => {
-    const srcPath = path.join(artifactDir, src);
-    const destPath = path.join(clientPublicDir, dest);
-    if (fs.existsSync(srcPath)) {
-      fs.copyFileSync(srcPath, destPath);
-      console.log(`Synced asset: ${dest}`);
-    }
-  });
-
-  // Automatically update the database document for Premium Leather Backpack
-  const ProductModel = require('./models/Product');
-  ProductModel.updateMany(
-    { name: "Premium Leather Backpack" },
-    { $set: { images: ["/backpack-neon.jpg"] } }
-  ).then((res) => {
-    if (res.modifiedCount > 0) {
-      console.log(`Updated Premium Leather Backpack image in DB: ${res.modifiedCount} modified`);
-    }
-  }).catch((err) => console.error('DB update error:', err.message));
-
-  const https = require('https');
-  const backpackOrigPath = path.join(artifactDir, 'original_backpack.jpg');
-  if (!fs.existsSync(backpackOrigPath)) {
-    const file = fs.createWriteStream(backpackOrigPath);
-    https.get('https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&q=80&w=800', (response) => {
-      response.pipe(file);
-      file.on('finish', () => {
-        file.close();
-        console.log('Original backpack image downloaded successfully');
-      });
-    }).on('error', (err) => {
-      fs.unlink(backpackOrigPath, () => {});
-      console.error('Error downloading backpack image:', err.message);
-    });
-  }
-} catch (e) {
-  console.error('Error syncing hero assets:', e.message);
-}
-
 app.use('/api/hero-assets', express.static(clientPublicDir));
 
 // Error Handling Middlewares
